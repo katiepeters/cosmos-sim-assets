@@ -1,0 +1,71 @@
+#usda 1.0
+(
+    defaultPrim = "Ball"
+    doc = """A slightly squishy 31.3 mm ball for the cosmos-tutorial pick task.
+
+    It is a rigid body with compliant (spring-damper) contacts, so it gives a
+    few millimeters under the Lite6 gripper's 2 N closing effort without being
+    a deformable body. The diameter matches the pick block's width, halfway
+    between the wide jaws' 22.4 mm closed and 40.2 mm open gaps.
+
+    Load it as a sim-world prop: {"type": "usd", "name": "pick_ball",
+    "usd_path": "<path to this file>", "position": [...]}"""
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Ball" (
+    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
+)
+{
+    float physics:mass = 0.02
+    # Rolling balls never settle on their own; a little damping lets an
+    # undisturbed ball come to rest instead of drifting off the table.
+    float physxRigidBody:angularDamping = 0.5
+    float physxRigidBody:linearDamping = 0.05
+
+    def Sphere "Collider" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "MaterialBindingAPI"]
+    )
+    {
+        double radius = 0.01565
+        float3[] extent = [(-0.01565, -0.01565, -0.01565), (0.01565, 0.01565, 0.01565)]
+        color3f[] primvars:displayColor = [(0.9, 0.1, 0.1)]
+        rel material:binding = </Ball/Looks/Rubber>
+        rel material:binding:physics = </Ball/Looks/SquishyPhysics> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+    }
+
+    def Scope "Looks"
+    {
+        def Material "Rubber"
+        {
+            token outputs:surface.connect = </Ball/Looks/Rubber/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.9, 0.1, 0.1)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.8
+                token outputs:surface
+            }
+        }
+
+        def Material "SquishyPhysics" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            # Grippy rubber, matching the cube props' default friction.
+            float physics:staticFriction = 1
+            float physics:dynamicFriction = 1
+            # Compliant contact: ~800 N/m compresses ~2.5 mm under the 2 N grip
+            # and ~0.25 mm under the ball's own weight. Restitution is ignored
+            # for compliant contacts; the damping sets how bouncy it feels.
+            float physxMaterial:compliantContactStiffness = 800
+            float physxMaterial:compliantContactDamping = 5
+            float physics:restitution = 0
+        }
+    }
+}
