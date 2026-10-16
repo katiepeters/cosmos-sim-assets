@@ -1,12 +1,13 @@
 #usda 1.0
 (
     defaultPrim = "Ball"
-    doc = """A slightly squishy 31.3 mm ball for the cosmos-tutorial pick task.
+    doc = """A slightly squishy 35 mm ball for the cosmos-tutorial pick task.
 
     It is a rigid body with compliant (spring-damper) contacts, so it gives a
-    few millimeters under the Lite6 gripper's 2 N closing effort without being
-    a deformable body. The diameter matches the pick block's width, halfway
-    between the wide jaws' 22.4 mm closed and 40.2 mm open gaps.
+    little under the Lite6 gripper's 2 N closing effort without being a
+    deformable body. It is wider than the 31.3 mm pick block so the jaws stop
+    well short of their 22.4 mm closed gap, and still clears the 40.2 mm open
+    gap by about 2.6 mm a side.
 
     Load it as a sim-world prop: {"type": "usd", "name": "pick_ball",
     "usd_path": "<path to this file>", "position": [...]}"""
@@ -18,7 +19,7 @@ def Xform "Ball" (
     prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysxRigidBodyAPI"]
 )
 {
-    float physics:mass = 0.02
+    float physics:mass = 0.025
     # Rolling balls never settle on their own; a little damping lets an
     # undisturbed ball come to rest instead of drifting off the table.
     float physxRigidBody:angularDamping = 0.5
@@ -28,9 +29,9 @@ def Xform "Ball" (
         prepend apiSchemas = ["PhysicsCollisionAPI", "MaterialBindingAPI"]
     )
     {
-        double radius = 0.01565
-        float3[] extent = [(-0.01565, -0.01565, -0.01565), (0.01565, 0.01565, 0.01565)]
-        color3f[] primvars:displayColor = [(0.9, 0.1, 0.1)]
+        double radius = 0.0175
+        float3[] extent = [(-0.0175, -0.0175, -0.0175), (0.0175, 0.0175, 0.0175)]
+        color3f[] primvars:displayColor = [(0.1, 0.3, 0.9)]
         rel material:binding = </Ball/Looks/Rubber>
         rel material:binding:physics = </Ball/Looks/SquishyPhysics> (
             bindMaterialAs = "weakerThanDescendants"
@@ -46,7 +47,7 @@ def Xform "Ball" (
             def Shader "Surface"
             {
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0.9, 0.1, 0.1)
+                color3f inputs:diffuseColor = (0.1, 0.3, 0.9)
                 float inputs:metallic = 0
                 float inputs:roughness = 0.8
                 token outputs:surface
@@ -60,11 +61,13 @@ def Xform "Ball" (
             # Grippy rubber, matching the cube props' default friction.
             float physics:staticFriction = 1
             float physics:dynamicFriction = 1
-            # Compliant contact: ~800 N/m compresses ~2.5 mm under the 2 N grip
-            # and ~0.25 mm under the ball's own weight. Restitution is ignored
-            # for compliant contacts; the damping sets how bouncy it feels.
-            float physxMaterial:compliantContactStiffness = 800
-            float physxMaterial:compliantContactDamping = 5
+            # Compliant contact: ~2500 N/m compresses ~0.8 mm under the 2 N grip
+            # and ~0.1 mm under the ball's own weight. At 800 N/m the jaws sank
+            # ~9 mm into a 31.3 mm ball and never registered a firm grasp.
+            # Restitution is ignored for compliant contacts; the damping sets
+            # how bouncy it feels.
+            float physxMaterial:compliantContactStiffness = 2500
+            float physxMaterial:compliantContactDamping = 10
             float physics:restitution = 0
         }
     }
